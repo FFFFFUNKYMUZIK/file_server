@@ -91,7 +91,6 @@ int main() {
     //msg
     ipc_msg_t ipc_msg;
 
-
     if (create_thrs(WTHR_NUM, &wthrs[0])<0){
         return -1;
     }

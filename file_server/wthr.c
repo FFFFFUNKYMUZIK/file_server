@@ -17,7 +17,7 @@ static io_context_t ioctx;
 thr_t wthrs[WTHR_NUM];
 bool stop_worker_thread = false;
 
-void read_proc(){
+void read_proc(msg_t* pmsg){
 
 
 
@@ -25,30 +25,32 @@ void read_proc(){
 }
 
 
-void write_proc(){
+void write_proc(msg_t* pmsg){
 
 
 
 }
 
-void put_proc(){
+msg_t* put_proc(msg_t* pmsg){
 
 
 
 }
 
-void get_proc(){
+msg_t* get_proc(msg_t* pmsg){
 
 
 }
 
-void list_proc(){
+msg_t* list_proc(msg_t* pmsg){
 
 
 
 }
 
 msg_t* msg_proc(msg_t* pmsg){
+
+    msg_t* pmsg_reply;
 
     switch(pmsg->optype){
         case OP_READ :
@@ -58,21 +60,17 @@ msg_t* msg_proc(msg_t* pmsg){
             write_proc(pmsg);
             break;
         case OP_PUT :
-            put_proc(pmsg);
-
+            return put_proc(pmsg);
             break;
         case OP_GET :
-            get_proc(pmsg);
-
-
+            return get_proc(pmsg);
             break;
         case OP_LIST :
-            list_proc(pmsg);
-            return
+            return list_proc(pmsg);
             break;
     }
 
-return NULL;
+    return NULL;
 }
 
 void* wthr_main(void* arg) {
@@ -107,7 +105,7 @@ void* ethr_main(void *arg){
 
     thr_arg_t* ppipe =  arg;
 
-    ipc_msg_t ipc_msg;
+    ipc_msg_t * pipc_msg_reply;
 
     if (io_setup(MAX_AIO_EVENT, &ioctx) != MAX_AIO_EVENT){
         stop_worker_thread = true;
@@ -123,9 +121,9 @@ void* ethr_main(void *arg){
 
     while(!stop_worker_thread){
         if ((event_num = io_getevents(ioctx, 1, MAX_AIO_EVENT, events, &timeout)) > 0){
-
             for (i=0;i<event_num;i++) {
-                events[0].data
+                pipc_msg_reply = events[i].data;
+                write(ppipe->wpipe, pipc_msg_reply, sizeof(ipc_msg_t));
             }
         }
     }
