@@ -1,7 +1,3 @@
-//
-// Created by cjh on 20. 8. 9..
-//
-
 #include <stddef.h>
 #include <stdlib.h>
 #include "msg_queue.h"
@@ -18,6 +14,7 @@ typedef struct queue_s{
 } queue_t;
 
 static queue_t q;
+void (*deallocator)(void* data);
 
 void queue_init(){
     q.head = NULL;
@@ -64,6 +61,10 @@ void* dequeue(){
     }
 }
 
+void set_destory_cb(void (*dealloc_func)(void* data)){
+    deallocator = dealloc_func;
+}
+
 void queue_destroy(){
 
     node_t* cur = q.head;
@@ -71,6 +72,8 @@ void queue_destroy(){
 
     while(cur != NULL){
         next = cur->next;
+        deallocator(cur->data);
+        free(cur->data);
         free(cur);
         cur = next;
     }

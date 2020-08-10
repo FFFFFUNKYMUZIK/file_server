@@ -1,0 +1,71 @@
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/filemeta.c : line 40 | meta file opened.
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 76871700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 76070700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 7586F700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 7506E700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 7486D700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 7406C700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 7386B700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 7306A700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 72869700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 72068700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 71867700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 71066700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 70865700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 70064700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 6F863700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 6F062700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 6E861700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 6E060700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 6D85F700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 6D05E700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 96 | thread(tid : 6C85D700) is activated! 
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 141 | Initialize msg queue!
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 144 | Server start!
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 155 | open listen socket: fd(89)
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 188 | main listen loop started!
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 209 | New connection!
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 210 | Client IP address : 127.0.0.1, fd(90)
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 215 | Current Client : (1 / 200)
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/filemeta.c : line 73 | new file added : test
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 33 | send msg to client : fd(90), OP(117440512)
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 59 | no job in job queue
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 33 | send msg to client : fd(90), OP(117440512)
+
+[ERROR] /work/workspace/ojt/file_server/file_server/src/common/msg.c : line 152 | recv msg header fail!
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 271 | Client is disconnected : fd(-1)
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 272 | Current Client : (0 / 200)
+[INFO] /work/workspace/ojt/file_server/file_server/src/server/server.c : line 114 | 
+[SIGINT] close connection.
+

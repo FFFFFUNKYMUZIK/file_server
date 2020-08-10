@@ -1,0 +1,6 @@
+[INFO] /work/workspace/ojt/file_server/file_server/src/client/client.c : line 73 | put processing...
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/client/client_proc.c : line 45 | open file for read : test, size : 183168 Byte, owner : cjh
+
+[INFO] /work/workspace/ojt/file_server/file_server/src/client/client_proc.c : line 143 | file send done : test (183168B) 
+

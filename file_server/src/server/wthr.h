@@ -1,12 +1,8 @@
-//
-// Created by cjh on 20. 8. 9..
-//
-
-#ifndef FILE_SERVER_WTHR_H
-#define FILE_SERVER_WTHR_H
+#ifndef _WTHR_H_
+#define _WTHR_H_
 
 #include <stdbool.h>
-#include "config.h"
+#include "../common/config.h"
 
 //worker thread
 
@@ -23,9 +19,10 @@ typedef struct thr_arg_s{
 extern thr_t wthrs[WTHR_NUM];
 extern thr_t ethr;
 
+extern bool stop_main_thread;
 extern bool stop_worker_thread;
 
 void* wthr_main(void* arg);
 void* ethr_main(void *arg);
 
-#endif //FILE_SERVER_WTHR_H
+#endif //_WTHR_H_
