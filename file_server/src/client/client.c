@@ -59,7 +59,6 @@ int main(int argc, char* argv[]){
         sprintf(format, "%%%ds", MAX_COMMAND_SIZE);
         scanf(format, command);
         fflush(stdin);
-        printf("in : %s\n", command);
 
         if (strcmp(command, "read") == 0 || strcmp(command, "READ") == 0){
             LINFO("read processing...\n");
@@ -72,14 +71,26 @@ int main(int argc, char* argv[]){
         else if (strcmp(command, "put") == 0|| strcmp(command, "PUT") == 0){
             LINFO("put processing...\n");
             put_proc(cfd);
+
+            //clear stdin buffer
+            char c;
+            while ((c = getchar()) != '\n');
         }
         else if (strcmp(command, "get") == 0|| strcmp(command, "GET") == 0){
             LINFO("get processing...\n");
             get_proc(cfd);
+
+            //clear stdin buffer
+            char c;
+            while ((c = getchar()) != '\n');
         }
         else if (strcmp(command, "list") == 0 || strcmp(command, "LIST") == 0 || strcmp(command, "ls") == 0){
             LINFO("list processing...\n");
             list_proc(cfd);
+
+            //clear stdin buffer
+            char c;
+            while ((c = getchar()) != '\n');
         }
         else if (strcmp(command, "q") == 0 || strcmp(command, "Q") == 0 ||
                  strcmp(command, "quit") == 0 || strcmp(command, "QUIT") == 0){
@@ -90,9 +101,11 @@ int main(int argc, char* argv[]){
             LINFO("Invalid Command...\n");
             print_command();
         }
+
     }
 
     close(cfd);
     log_end();
     return 0;
 }
+

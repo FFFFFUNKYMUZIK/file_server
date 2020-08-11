@@ -265,11 +265,13 @@ int main(int argc, char* argv[]){
                 ipc_msg.pmsg = recv_msg(fds[i].fd, &ipc_msg.buf);
 
                 if (ipc_msg.pmsg == NULL){
-                    fds[i].fd = -1;
-                    cur_con--;
 
+                    cur_con--;
                     LINFO("Client is disconnected : fd(%d)", fds[i].fd);
                     LINFO("Current Client : (%d / %d)", cur_con, MAX_CLIENT);
+
+                    fds[i].fd = -1;
+
                     continue;
                 }
                 assign_job(&ipc_msg);

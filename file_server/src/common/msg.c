@@ -6,10 +6,8 @@
 #include "sock.h"
 #include "log.h"
 
-msg_hd_t* alloc_send_msg(int msgtype){
-    msg_hd_t* pmsg;
+void init_send_msg(msg_hd_t* pmsg, int msgtype){
     if (msgtype == MSG_COMMAND){
-        pmsg = (msg_hd_t*)malloc(sizeof(commsg_t));
         memset(pmsg, 0x00, sizeof(commsg_t));
         pmsg->msglen = sizeof(commsg_t);
         pmsg->msgtype = MSG_COMMAND;
@@ -17,15 +15,27 @@ msg_hd_t* alloc_send_msg(int msgtype){
         pmsg->buflen = 0;
     }
     else if (msgtype == MSG_DATA){
-        pmsg = (msg_hd_t*)malloc(sizeof(datamsg_t));
         memset(pmsg, 0x00, sizeof(datamsg_t));
         pmsg->msglen = sizeof(datamsg_t);
         pmsg->msgtype = MSG_DATA;
         pmsg->err = ERR_NONE;
     }
+}
+
+msg_hd_t* alloc_send_msg(int msgtype){
+    msg_hd_t* pmsg;
+    if (msgtype == MSG_COMMAND){
+        pmsg = (msg_hd_t*)malloc(sizeof(commsg_t));
+        init_send_msg(pmsg, msgtype);
+    }
+    else if (msgtype == MSG_DATA){
+        pmsg = (msg_hd_t*)malloc(sizeof(datamsg_t));
+        init_send_msg(pmsg, msgtype);
+    }
 
     return pmsg;
 }
+
 
 void free_msg(msg_hd_t* pmsg_hd){
     if (!pmsg_hd){

@@ -66,7 +66,9 @@ void log_(int level, const char* file, int line, const char *fmt, ...){
 
     sprintf(buf, "[%s] %s : line %d | %s\n", level_strings[level], file, line, body);
 
-    printf("%s", buf);
+    //print all information including file, line.
+    //printf("%s", buf);
+    printf("[%s] %s", level_strings[level], body);
 
     if (lfd!=-1){
         pthread_mutex_lock(&fmtx);

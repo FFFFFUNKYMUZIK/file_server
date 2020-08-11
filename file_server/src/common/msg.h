@@ -85,6 +85,8 @@ typedef struct datamsg_s{
 } datamsg_t;
 
 
+void init_send_msg(msg_hd_t* pmsg, int msgtype);
+
 msg_hd_t* alloc_send_msg(int msgtype);
 
 void free_msg(msg_hd_t* pmsg_hd);
