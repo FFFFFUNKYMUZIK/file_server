@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "msg_queue.h"
 
 typedef struct node_s {
@@ -43,6 +44,7 @@ void enqueue(void* pdata){
         q.tail = pnode;
         q.size++;
     }
+
 }
 
 void* dequeue(){

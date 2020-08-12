@@ -52,6 +52,9 @@ void read_proc(int socket_fd){
 
     //setup get command msg
     pmsg_com->op = OP_READ;
+    pmsg_com->offset = fileoffset;
+    pmsg_com->reqlen = buflen;
+
     strncpy(pmsg_com->fi.filename, filename, FILENAME_LEN_MAX);
 
     do{
@@ -99,6 +102,10 @@ void read_proc(int socket_fd){
     int filesize = pmsg_com_reply->fi.filesize;
 
     int remain = filesize < fileoffset+buflen?  filesize-fileoffset : buflen;
+    if (remain <= 0){
+        LERR("Invalid offset value!\n");
+        goto exit;
+    }
     int total = remain;
     int recvlen = 0;
 
@@ -176,12 +183,12 @@ void write_proc(int socket_fd){
     scanf(format, filename);
     fflush(stdin);
 
-    int offset;
+    int fileoffset;
     int buflen = 0;
-    scanf("%d", &offset);
+    scanf("%d", &fileoffset);
     fflush(stdin);
 
-    if (offset<0){
+    if (fileoffset<0){
         LERR("invalid offset value!\n");
         return;
     }
@@ -208,6 +215,8 @@ void write_proc(int socket_fd){
         return;
     }
 
+    int offset = fileoffset;
+
     LINFO("write filename : %s, size : %d Byte, offset : %d\n", filename, buflen, offset);
 
     //declare/alloc msgs
@@ -221,6 +230,8 @@ void write_proc(int socket_fd){
 
     //setup put command msg
     pmsg_com->op = OP_WRITE;
+    pmsg_com->offset = fileoffset;
+    pmsg_com->reqlen = buflen;
     strncpy(pmsg_com->fi.filename, filename, FILENAME_LEN_MAX);
 
     do{
@@ -264,7 +275,11 @@ void write_proc(int socket_fd){
     int remote_fd = pmsg_com_reply->u.sfilefd;
     int filesize = pmsg_com_reply->fi.filesize;
 
-    int remain = filesize < offset+buflen?  filesize-offset : buflen;
+    int remain = filesize < fileoffset+buflen?  filesize-fileoffset : buflen;
+    if (remain <= 0){
+        LERR("Invalid offset value!\n");
+        goto exit;
+    }
     int sendlen = 0;
     int bufoffset = 0;
 
@@ -278,7 +293,7 @@ void write_proc(int socket_fd){
         pmsg_data->buflen = sendlen;
 
         pmsg_data->sfilefd = remote_fd;
-        pmsg_data->offset = offset;
+        pmsg_data->offset = fileoffset;
 
         //send put data msg
         if (send_msg(socket_fd, pmsg_data, buf + bufoffset) == -1) {
@@ -297,7 +312,7 @@ void write_proc(int socket_fd){
             goto exit;
         }
 
-        offset += sendlen;
+        fileoffset += sendlen;
         bufoffset += sendlen;
         remain -= sendlen;
         free(pmsg_data_reply);

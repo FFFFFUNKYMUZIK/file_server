@@ -159,7 +159,9 @@ msg_hd_t* recv_msg(int socket_fd, unsigned char** buf){
     recvlen = sock_recv(socket_fd, pmsg_hd, msghdsize);
 
     if (recvlen != msghdsize){
-        LERR("recv msg header fail!\n");
+        if (recvlen != 0) {
+            LERR("recv msg header fail!\n");
+        }
         free(pmsg_hd);
         return NULL;
     }

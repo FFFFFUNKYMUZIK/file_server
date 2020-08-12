@@ -12,10 +12,11 @@ static io_context_t ioctx;
 
 thr_t wthrs[WTHR_NUM];
 thr_t ethr;
+thr_t mthr;
 
 bool stop_worker_thread = false;
 
-msg_hd_t*  read_proc(ipc_msg_t* pipc_msg){
+msg_hd_t* read_proc(ipc_msg_t* pipc_msg){
 
     msg_hd_t* preply;
     msg_hd_t* pmsg = pipc_msg->pmsg;
@@ -26,14 +27,26 @@ msg_hd_t*  read_proc(ipc_msg_t* pipc_msg){
         pcom_reply->op = OP_READ_REPLY;
 
         int fidx;
-        if ((fidx = get_file_index_from_list(pcom->fi.filename)) < 0){
-            LERR("Cannot add file to list : %s\n", pcom->fi.filename);
+        if ((fidx = get_file_index_from_list(&pcom->fi, false)) < 0){
+            LERR("Cannot find file : %s\n", pcom->fi.filename);
             pcom_reply->err = ERR_NOFILE;
             return pcom_reply;
         }
 
         const file_meta_t* pfm = get_filemeta_by_idx(fidx);
         const file_info_t* pfi = &pfm->fi;
+
+        int remain = pcom->offset + pcom->reqlen > pfi->filesize ? pfi->filesize - pcom->offset : pcom->reqlen;
+        if (remain<=0){
+            pcom_reply->err = ERR_NOFILE;
+            return pcom_reply;
+        }
+
+        int lock_cnt = (remain + (FILE_STRIPE-1))/FILE_STRIPE;
+        if (!wait_lock(fidx, lock_cnt, true)){
+            pcom_reply->err = ERR_UNKNOWN;
+            return pcom_reply;
+        }
 
         pcom_reply->u.sfilefd = fidx;
         pcom_reply->fi.filesize = pfi->filesize;
@@ -65,6 +78,7 @@ msg_hd_t*  read_proc(ipc_msg_t* pipc_msg){
 
             pdata_reply = alloc_send_msg(MSG_DATA);
             pdata_reply->op = OP_READ_REPLY;
+            pdata_reply->sfilefd = pdata->sfilefd;
             pdata_reply->buflen = sendlen;
             pdata_reply->offset = offset;
 
@@ -105,16 +119,26 @@ msg_hd_t*  write_proc(ipc_msg_t* pipc_msg){
         pcom_reply->op = OP_WRITE_REPLY;
 
         int fidx;
-        if ((fidx = get_file_index_from_list(pcom->fi.filename)) < 0){
-            if ((fidx = add_file_to_list(&pcom->fi))<0){
-                LERR("Cannot add file to list : %s\n", pcom->fi.filename);
-                pcom_reply->err = ERR_UNKNOWN;
-                return pcom_reply;
-            }
+        if ((fidx = get_file_index_from_list(&pcom->fi, false)) < 0){
+            LERR("Cannot find file : %s\n", pcom->fi.filename);
+            pcom_reply->err = ERR_NOFILE;
+            return pcom_reply;
         }
 
         const file_meta_t* pfm = get_filemeta_by_idx(fidx);
         const file_info_t* pfi = &pfm->fi;
+
+        int remain = pcom->offset + pcom->reqlen > pfi->filesize ? pfi->filesize - pcom->offset : pcom->reqlen;
+        if (remain<=0){
+            pcom_reply->err = ERR_NOFILE;
+            return pcom_reply;
+        }
+
+        int lock_cnt = (remain + (FILE_STRIPE-1))/FILE_STRIPE;
+        if (!wait_lock(fidx, lock_cnt, false)){
+            pcom_reply->err = ERR_UNKNOWN;
+            return pcom_reply;
+        }
 
         pcom_reply->u.sfilefd = fidx;
         pcom_reply->fi.filesize = pfi->filesize;
@@ -127,6 +151,8 @@ msg_hd_t*  write_proc(ipc_msg_t* pipc_msg){
         pdata_reply = alloc_send_msg(MSG_DATA);
         pdata_reply->op = OP_WRITE_REPLY;
         pdata_reply->buflen = 0;
+        pdata_reply->sfilefd = pdata->sfilefd;
+
         const file_meta_t* pfm = get_filemeta_by_idx(pdata->sfilefd);
         const file_info_t* pfi = &pfm->fi;
 
@@ -170,13 +196,24 @@ msg_hd_t* put_proc(ipc_msg_t* pipc_msg){
         pcom_reply->op = OP_PUT_REPLY;
 
         int fidx;
-        if ((fidx = get_file_index_from_list(pcom->fi.filename)) < 0){
-            if ((fidx = add_file_to_list(&pcom->fi))<0){
-                LERR("Cannot add file to list : %s\n", pcom->fi.filename);
-                pcom_reply->err = ERR_UNKNOWN;
-                return pcom_reply;
-            }
+        if ((fidx = get_file_index_from_list(&pcom->fi, true)) < 0){
+            LERR("Cannot add file to list : %s\n", pcom->fi.filename);
+            pcom_reply->err = ERR_UNKNOWN;
+            return pcom_reply;
         }
+
+        int remain = pcom->fi.filesize;
+        if (remain<=0){
+            pcom_reply->err = ERR_NOFILE;
+            return pcom_reply;
+        }
+
+        int lock_cnt = (remain + (FILE_STRIPE-1))/FILE_STRIPE;
+        if (!wait_lock(fidx, lock_cnt, false)){
+            pcom_reply->err = ERR_UNKNOWN;
+            return pcom_reply;
+        }
+
         pcom_reply->u.sfilefd = fidx;
         preply = pcom_reply;
     }
@@ -186,10 +223,11 @@ msg_hd_t* put_proc(ipc_msg_t* pipc_msg){
         pdata_reply = alloc_send_msg(MSG_DATA);
         pdata_reply->op = OP_PUT_REPLY;
         pdata_reply->buflen = 0;
+        pdata_reply->sfilefd = pdata->sfilefd;
         const file_meta_t* pfm = get_filemeta_by_idx(pdata->sfilefd);
         const file_info_t* pfi = &pfm->fi;
 
-        int fd = open(pfi->filename, O_CREAT | O_TRUNC | O_WRONLY, 0644);
+        int fd = open(pfi->filename, O_CREAT | O_WRONLY, 0644);
         if (fd<0){
             LERR("file open error\n");
             pdata_reply->err = ERR_UNKNOWN;
@@ -230,14 +268,26 @@ msg_hd_t* get_proc(ipc_msg_t* pipc_msg){
         pcom_reply->op = OP_GET_REPLY;
 
         int fidx;
-        if ((fidx = get_file_index_from_list(pcom->fi.filename)) < 0){
-            LERR("Cannot add file to list : %s\n", pcom->fi.filename);
+        if ((fidx = get_file_index_from_list(&pcom->fi, false)) < 0){
+            LERR("Cannot find file : %s\n", pcom->fi.filename);
             pcom_reply->err = ERR_NOFILE;
             return pcom_reply;
         }
 
         const file_meta_t* pfm = get_filemeta_by_idx(fidx);
         const file_info_t* pfi = &pfm->fi;
+
+        int remain = pfi->filesize;
+        if (remain<=0){
+            pcom_reply->err = ERR_NOFILE;
+            return pcom_reply;
+        }
+
+        int lock_cnt = (remain + (FILE_STRIPE-1))/FILE_STRIPE;
+        if (!wait_lock(fidx, lock_cnt, true)){
+            pcom_reply->err = ERR_UNKNOWN;
+            return pcom_reply;
+        }
 
         pcom_reply->u.sfilefd = fidx;
         pcom_reply->fi.filesize = pfi->filesize;
@@ -270,6 +320,7 @@ msg_hd_t* get_proc(ipc_msg_t* pipc_msg){
 
             pdata_reply = alloc_send_msg(MSG_DATA);
             pdata_reply->op = OP_GET_REPLY;
+            pdata_reply->sfilefd = pdata->sfilefd;
             pdata_reply->buflen = sendlen;
             pdata_reply->offset = offset;
 
@@ -379,27 +430,31 @@ msg_hd_t* msg_proc(ipc_msg_t* pipc_msg, unsigned char** buf){
 
 void* wthr_main(void* arg) {
 
-    thr_arg_t* ppipe =  arg;
+    thr_arg_t* parg =  arg;
+    thr_t* pthr = &wthrs[parg->self_thr_idx];
 
     struct pollfd ipc_fd;
     ipc_msg_t ipc_msg;
     ipc_msg_t ipc_msg_reply;
 
-    ipc_fd.fd = ppipe->rpipe;
+    ipc_fd.fd = parg->rpipe;
     ipc_fd.events = POLLIN;
 
     while(!stop_worker_thread){
 
+        pthr->isrun = false;
         poll(&ipc_fd, 1, POLL_WAIT_TIME);
+        pthr->isrun = true;
 
         if (ipc_fd.revents & POLLIN){
-            read(ppipe->rpipe, &ipc_msg, sizeof(ipc_msg_t));
+
+            read(parg->rpipe, &ipc_msg, sizeof(ipc_msg_t));
             ipc_msg_reply.pconn = ipc_msg.pconn;
             ipc_msg_reply.pmsg = msg_proc(&ipc_msg, &ipc_msg_reply.buf);
 
             free(ipc_msg.pmsg);
             if (ipc_msg_reply.pmsg != NULL) {
-                write(ppipe->wpipe, &ipc_msg_reply, sizeof(ipc_msg_t));
+                write(parg->wpipe, &ipc_msg_reply, sizeof(ipc_msg_t));
             }
         }
     }
@@ -412,6 +467,7 @@ void* ethr_main(void *arg){
     thr_arg_t* ppipe =  arg;
 
     ipc_msg_t * pipc_msg_reply;
+    datamsg_t * pdata_reply;
 
     if (io_setup(MAX_AIO_EVENT, &ioctx) != 0){
         LERR("io_setup error!\n");
@@ -432,11 +488,34 @@ void* ethr_main(void *arg){
                 pipc_msg_reply = events[i].data;
                 write(ppipe->wpipe, pipc_msg_reply, sizeof(ipc_msg_t));
 
+                short aio_opcode = events[i].obj->aio_lio_opcode;
+                pdata_reply = pipc_msg_reply->pmsg;
+
+                if (aio_opcode == IO_CMD_PREAD){
+                    decrease_lock_cnt(pdata_reply->sfilefd, true);
+                }
+                else if (aio_opcode == IO_CMD_PWRITE){
+                    decrease_lock_cnt(pdata_reply->sfilefd, false);
+                }
+
                 free(pipc_msg_reply);
             }
         }
     }
 
     io_destroy(ioctx);
+    free(arg);
+}
+
+void* mthr_main(void *arg){
+    while(!stop_worker_thread){
+        int filecnt = get_file_cnt();
+        int i;
+        for (i=0;i<filecnt;i++) {
+            if (lock_timeout(i))
+                release_lock(i);
+        }
+        usleep(FILE_LOCK_CHECKTIME);
+    }
     free(arg);
 }

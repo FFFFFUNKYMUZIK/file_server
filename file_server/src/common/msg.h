@@ -63,6 +63,8 @@ typedef uint32_t msgtype_t;
             uint32_t filenum;               \
         } u;                                \
         file_info_t fi;                     \
+        uint32_t offset;                    \
+        uint32_t reqlen;
 
 #define DATAMSG_BODY                        \
         uint32_t sfilefd;                   \

@@ -14,15 +14,18 @@ typedef struct thr_s{
 
 typedef struct thr_arg_s{
     int rpipe, wpipe; // used inside of each wthr
+    int self_thr_idx;
 } thr_arg_t;
 
 extern thr_t wthrs[WTHR_NUM];
 extern thr_t ethr;
+extern thr_t mthr;
 
 extern bool stop_main_thread;
 extern bool stop_worker_thread;
 
 void* wthr_main(void* arg);
 void* ethr_main(void *arg);
+void* mthr_main(void *arg);
 
 #endif //_WTHR_H_

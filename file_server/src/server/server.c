@@ -40,7 +40,6 @@ void assign_job(ipc_msg_t* pipc_msg){
         if (!wthrs[i].isrun){
             int ret;
             ret = write(wthrs[i].wpipe, pipc_msg, sizeof(ipc_msg_t));
-            wthrs[i].isrun = true;
             return;
         }
     }
@@ -86,6 +85,7 @@ int create_thrs(int tnum, thr_t thrarr[], void* (*thrfunc)(void*)){
         arg = malloc(sizeof(thr_arg_t));
         arg->rpipe = wpipe[0];
         arg->wpipe = rpipe[1];
+        arg->self_thr_idx = i;
         thrarr[i].rpipe = rpipe[0];
         thrarr[i].wpipe = wpipe[1];
 
@@ -129,11 +129,18 @@ int main(int argc, char* argv[]){
     //msg
     ipc_msg_t ipc_msg;
 
+    //worker
     if (create_thrs(WTHR_NUM, &wthrs[0], &wthr_main)<0){
         return -1;
     }
 
+    //event thread
     if (create_thrs(1, &ethr, &ethr_main)<0){
+        return -1;
+    }
+
+    //monitor thread
+    if (create_thrs(1, &mthr, &mthr_main)<0){
         return -1;
     }
 
@@ -152,7 +159,7 @@ int main(int argc, char* argv[]){
 
     //open listen socket
     sfd = open_listen_socket(argv[1], MAX_CLIENT_WAIT);
-    LINFO("open listen socket: fd(%d)", sfd);
+    LINFO("open listen socket: fd(%d)\n", sfd);
 
     // setup fd array
     // server socket, wthr, ethr, client
@@ -187,6 +194,7 @@ int main(int argc, char* argv[]){
     //main loop
     LINFO("main listen loop started!\n");
     while(!stop_main_thread){
+
         nread = poll(fds, maxidx + 1, POLL_WAIT_TIME);
 
         if (nread==0) continue;
@@ -212,12 +220,12 @@ int main(int argc, char* argv[]){
                     fds[fdc].events = POLLIN;
                     cur_con++;
 
-                    LINFO("Current Client : (%d / %d)", cur_con, MAX_CLIENT);
+                    LINFO("Current Client : (%d / %d)\n", cur_con, MAX_CLIENT);
                     break;
                 }
             };
             if (c==MAX_CLIENT){
-                LWARN("Too Many Clients (%d / %d)", cur_con, MAX_CLIENT);
+                LWARN("Too Many Clients (%d / %d)\n", cur_con, MAX_CLIENT);
                 continue;
             }
             if (fdc>maxidx) maxidx = fdc;
@@ -233,11 +241,7 @@ int main(int argc, char* argv[]){
                     send_msg_to_client(&ipc_msg);
                 }
 
-                if (get_new_job(&ipc_msg)<0){
-                    //LINFO("thread(tid:%X) is going to sleep...\n", wthrs[i-1].tid);
-                    wthrs[i-1].isrun = false;
-                }
-                else{
+                if (get_new_job(&ipc_msg)==0){
                     write(wthrs[i-1].wpipe, &ipc_msg, sizeof(ipc_msg));
                 }
 
@@ -257,9 +261,10 @@ int main(int argc, char* argv[]){
 
         //LINFO("check client msg...\n");
         //client socket
+
         for (i=clientidx;i<=maxidx;i++){
 
-            if (fds[i].revents & (POLLIN | POLLERR)){
+            if (fds[i].fd != -1 && (fds[i].revents & (POLLIN | POLLERR))){
 
                 ipc_msg.pconn = &connections[i-clientidx];
                 ipc_msg.pmsg = recv_msg(fds[i].fd, &ipc_msg.buf);
@@ -267,8 +272,8 @@ int main(int argc, char* argv[]){
                 if (ipc_msg.pmsg == NULL){
 
                     cur_con--;
-                    LINFO("Client is disconnected : fd(%d)", fds[i].fd);
-                    LINFO("Current Client : (%d / %d)", cur_con, MAX_CLIENT);
+                    LINFO("Client is disconnected : fd(%d)\n", fds[i].fd);
+                    LINFO("Current Client : (%d / %d)\n", cur_con, MAX_CLIENT);
 
                     fds[i].fd = -1;
 
@@ -280,17 +285,17 @@ int main(int argc, char* argv[]){
             }
         }
 
-
     }
 
     stop_worker_thread = true;
 
-    int status;
+    void *status;
     for (i=0;i<WTHR_NUM;i++){
         pthread_join(wthrs[i].tid, &status);
     }
 
     pthread_join(ethr.tid, &status);
+    pthread_join(mthr.tid, &status);
 
     filelist_destory();
     queue_destroy();
