@@ -24,6 +24,8 @@ static int add_file_to_list(file_info_t* pfi){
     pthread_mutex_init(&pfm->lock, NULL);
     pfm->rcnt = 0;
     pfm->wcnt = 0;
+    pfm->rfd = -1;
+    pfm->wfd = -1;
     pfm->head = NULL;
     pfm->tail = NULL;
     pfm->wait_job_cnt = 0;
@@ -83,6 +85,8 @@ void filelist_init(){
         pthread_mutex_init(&pfm->lock, NULL);
         pfm->rcnt = 0;
         pfm->wcnt = 0;
+        pfm->rfd = -1;
+        pfm->wfd = -1;
         pfm->head = NULL;
         pfm->tail = NULL;
         pfm->wait_job_cnt = 0;
@@ -193,6 +197,38 @@ bool wait_lock(int fidx, int lock_cnt, bool read){
     return true;
 }
 
+int get_fd_by_fidx(int fidx, bool read) {
+
+    pthread_mutex_lock(&file_list.lmtx);
+    if (fidx>=file_list.cnt){
+        pthread_mutex_unlock(&file_list.lmtx);
+        return -1;
+    }
+    pthread_mutex_unlock(&file_list.lmtx);
+
+    file_meta_t* pfm = &file_list.filearr[fidx];
+
+    pthread_mutex_lock(&pfm->lock);
+
+    int ret_fd;
+
+    if (read){
+        if (pfm->rfd < 0){
+            pfm->rfd = open(pfm->fi.filename, O_RDONLY);
+        }
+        ret_fd = pfm->rfd;
+    }
+    else{
+        if (pfm->wfd < 0){
+            pfm->wfd = open(pfm->fi.filename, O_CREAT | O_WRONLY, 0644);
+        }
+        ret_fd = pfm->wfd;
+    }
+    pthread_mutex_unlock(&pfm->lock);
+
+    return ret_fd;
+}
+
 void decrease_lock_cnt(int fidx, bool read){
     pthread_mutex_lock(&file_list.lmtx);
     if (fidx>=file_list.cnt){
@@ -273,6 +309,25 @@ int get_file_cnt(void){
 }
 
 void filelist_destory(){
+
+    pthread_mutex_lock(&file_list.lmtx);
+
+    for (int i=0;i<file_list.cnt;i++){
+        file_meta_t* pfm = &file_list.filearr[i];
+        pthread_mutex_lock(&pfm->lock);
+        wait_job_t* cur = pfm->head;
+        close(pfm->rfd);
+        close(pfm->wfd);
+        while(cur != NULL){
+            pthread_cond_signal(&cur->cond);
+            cur = cur->next;
+        }
+
+        pthread_mutex_unlock(&pfm->lock);
+    }
+
+    pthread_mutex_unlock(&file_list.lmtx);
+
     pthread_mutex_destroy(&file_list.lmtx);
     close(file_list.fd);
 }

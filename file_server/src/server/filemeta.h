@@ -30,6 +30,8 @@ typedef struct file_meta_s{
     pthread_mutex_t lock;
     int rcnt;
     int wcnt;
+    int rfd;
+    int wfd;
     wait_job_t* head;
     wait_job_t* tail;
     int wait_job_cnt;
@@ -48,6 +50,7 @@ int get_file_index_from_list(file_info_t* pfi, bool add_if_nonexist);
 const file_meta_t* get_filemeta_by_idx(int fidx);
 
 bool wait_lock(int fidx, int lock_cnt, bool read);
+int get_fd_by_fidx(int fidx, bool read);
 void decrease_lock_cnt(int fidx, bool read);
 bool lock_timeout(int fidx);
 void release_lock(int fidx);

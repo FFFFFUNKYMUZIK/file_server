@@ -58,7 +58,7 @@ msg_hd_t* read_proc(ipc_msg_t* pipc_msg){
         const file_meta_t* pfm = get_filemeta_by_idx(pdata->sfilefd);
         const file_info_t* pfi = &pfm->fi;
 
-        int fd = open(pfi->filename, O_RDONLY);
+        int fd = get_fd_by_fidx(pdata->sfilefd, true);
         if (fd<0){
             LERR("file open error\n");
             pdata_reply = alloc_send_msg(MSG_DATA);
@@ -156,7 +156,7 @@ msg_hd_t*  write_proc(ipc_msg_t* pipc_msg){
         const file_meta_t* pfm = get_filemeta_by_idx(pdata->sfilefd);
         const file_info_t* pfi = &pfm->fi;
 
-        int fd = open(pfi->filename, O_WRONLY, 0644);
+        int fd = get_fd_by_fidx(pdata->sfilefd, false);
         if (fd<0){
             LERR("file open error\n");
             pdata_reply->err = ERR_UNKNOWN;
@@ -227,7 +227,7 @@ msg_hd_t* put_proc(ipc_msg_t* pipc_msg){
         const file_meta_t* pfm = get_filemeta_by_idx(pdata->sfilefd);
         const file_info_t* pfi = &pfm->fi;
 
-        int fd = open(pfi->filename, O_CREAT | O_WRONLY, 0644);
+        int fd = get_fd_by_fidx(pdata->sfilefd, false);
         if (fd<0){
             LERR("file open error\n");
             pdata_reply->err = ERR_UNKNOWN;
@@ -299,7 +299,7 @@ msg_hd_t* get_proc(ipc_msg_t* pipc_msg){
         const file_meta_t* pfm = get_filemeta_by_idx(pdata->sfilefd);
         const file_info_t* pfi = &pfm->fi;
 
-        int fd = open(pfi->filename, O_RDONLY);
+        int fd = get_fd_by_fidx(pdata->sfilefd, true);
         if (fd<0){
             LERR("file open error\n");
             pdata_reply = alloc_send_msg(MSG_DATA);
